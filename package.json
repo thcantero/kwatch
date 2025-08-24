@@ -1,0 +1,19 @@
+{
+  "name": "kwatch",
+  "version": "1.0.0",
+  "description": "A KDrama Tracker & Social Hub",
+  "main": "app.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thcantero/kwatch.git"
+  },
+  "author": "Thalia Cantero",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/thcantero/kwatch/issues"
+  },
+  "homepage": "https://github.com/thcantero/kwatch#readme"
+}
