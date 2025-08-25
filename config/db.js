@@ -3,7 +3,7 @@
 /** Database setup for Kwatch */
 
 const { Client } = require("pg");
-const { getDatabaseURI } = require("./config");
+const { getDatabaseURI } = require("../config");
 
 let db;
 
