@@ -1,0 +1,48 @@
+{
+  "name": "kwatch",
+  "version": "1.0.0",
+  "description": "A social tracker for Korean shows and movies",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "seed": "node seed.js",
+    "test": "jest -i --testPathIgnorePatterns=tmdb_live",
+    "test:live": "jest tests/tmdb_live.test.js"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/jest.setup.js"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thcantero/kwatch.git"
+  },
+  "author": "T. Cantero",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/thcantero/kwatch/issues"
+  },
+  "homepage": "https://github.com/thcantero/kwatch#readme",
+  "dependencies": {
+    "axios": "^1.13.2",
+    "bcrypt": "^6.0.0",
+    "colors": "^1.4.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "ignore": "^7.0.5",
+    "jsonwebtoken": "^9.0.3",
+    "nodemon": "^3.1.11",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "eslint": "^9.39.1",
+    "globals": "^16.5.0",
+    "jest": "^30.2.0",
+    "supertest": "^7.1.4"
+  }
+}

@@ -24,3 +24,10 @@ coverage/
 
 # Dowloads
 **/downloads/
+
+# Debug
+debug.js
+seed_log.txt
+test_output.txt
+printTree.js
+tree.txt
