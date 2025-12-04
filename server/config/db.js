@@ -18,6 +18,11 @@ if( process.env.NODE_ENV === "production") {
     });
 }
 
-db.connect();
+// Only call db.connect() in non-test environments
+if (process.env.NODE_ENV !== 'test') {
+    db.connect()
+        .then(() => console.log("✅ Database connected"))
+        .catch(err => console.error("❌ Database connection error:", err));
+}
 
 module.exports = {db};

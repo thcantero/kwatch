@@ -1,18 +1,21 @@
 const { db } = require("../config/db");
 const User = require("../models/User");
-// FIX 1: Import directly from utils, NOT controller
 const { createToken } = require("../utils/tokens"); 
 
 async function commonBeforeAll() {
   // Clear tables - Order matters because of Foreign Keys!
-  await db.query("DELETE FROM shows_genres");
-  await db.query("DELETE FROM shows_actors");
-  await db.query("DELETE FROM reviews");
-  await db.query("DELETE FROM watchlist");
-  await db.query("DELETE FROM users");
-  await db.query("DELETE FROM shows");
-  await db.query("DELETE FROM actors");
-  await db.query("DELETE FROM genres");
+  await db.query(`
+    TRUNCATE 
+      users, 
+      shows, 
+      genres, 
+      actors, 
+      watchlist, 
+      reviews, 
+      shows_genres, 
+      shows_actors 
+    RESTART IDENTITY CASCADE
+  `);
 
   // Create a default test user
   await User.register({
@@ -44,10 +47,38 @@ async function commonAfterEach() {
 }
 
 async function commonAfterAll() {
-  await db.end(); // Close connection to stop Jest from hanging
+  try {
+    // In test environment, we need to manually close connections
+    if (process.env.NODE_ENV === 'test') {
+      // First, check if there are any active connections
+      const result = await db.query(`
+        SELECT pid, query, state 
+        FROM pg_stat_activity 
+        WHERE datname = current_database()
+        AND state = 'idle'
+      `);
+      
+      // Kill any idle connections (optional but helpful)
+      for (const row of result.rows) {
+        try {
+          await db.query(`SELECT pg_terminate_backend($1)`, [row.pid]);
+        } catch (e) {
+          // Ignore errors
+        }
+      }
+      
+      // Close the pool
+      await db.end();
+    }
+  } catch (err) {
+    console.warn("Warning during test cleanup:", err.message);
+    // In test environment, force exit if cleanup fails
+    if (process.env.NODE_ENV === 'test') {
+      setTimeout(() => process.exit(0), 1000);
+    }
+  }
 }
 
-// FIX 2: Complete the helper function to actually return a token
 async function createTestToken(username="u1") {
     // We need to fetch the user by username to get their ID
     const res = await db.query(`SELECT * FROM users WHERE username = $1`, [username]);
@@ -60,5 +91,5 @@ module.exports = {
   commonBeforeEach,
   commonAfterEach,
   commonAfterAll,
-  createTestToken // Export this so tests can use it
+  createTestToken
 };

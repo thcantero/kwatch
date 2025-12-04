@@ -1,5 +1,7 @@
-// when asking for ../services/tmdb use in __mocks__ instead
-jest.mock("../services/tmdb");
+// Import the mock file 
+jest.mock("../services/tmdb", () => {
+    return require("../services/__mocks__/tmdb");
+});
 
 // Slightly higher timeout for DB tests (optional but good for safety)
 jest.setTimeout(10000);

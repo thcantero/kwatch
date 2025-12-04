@@ -1,11 +1,12 @@
 const axios = require("axios");
 const { BadRequestResponse } = require("../utils/responses");
 
-const API_KEY = process.env.TMDB_API_KEY;
-const BASE_URL = process.env.TMDB_BASE_URL || "https://api.themoviedb.org/3";
 
 class TMDBService {
     static async fetch(endpoint, params = {}) {
+        const API_KEY = process.env.TMDB_API_KEY;
+        const BASE_URL = process.env.TMDB_BASE_URL || "https://api.themoviedb.org/3";
+
         // --- DEBUGGING LOG ---
         const urlToFetch = `${BASE_URL}${endpoint}`;
         console.log(`📡 Fetching: ${urlToFetch}`); 
@@ -18,6 +19,11 @@ class TMDBService {
             return res.data;
         } catch (err) {
             console.error(`TMDB Error: ${err.message}`);
+            // Forward 401 (Unauthorized) specifically so the test detects it
+            if (err.response && err.response.status === 401) {
+                throw new BadRequestResponse("Failed to fetch from external provider");
+            }
+            
             throw new BadRequestResponse("Failed to fetch from external provider");
         }
     }

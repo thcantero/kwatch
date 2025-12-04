@@ -1,4 +1,4 @@
-const TMDBService = require("../services/tmdb");
+const TMDBService = jest.requireActual("../services/tmdb");
 
 // We only run these tests if we explicitly ask for them
 // or skip them if we are in a CI environment without keys.
@@ -38,16 +38,34 @@ describeIfKey("TMDB Service (Live Connection)", function () {
     test("handles invalid API key gracefully", async function () {
         // Temporarily break the key to test error handling
         const originalKey = process.env.TMDB_API_KEY;
+
+        // Clear the require cache for tmdb module
+        delete require.cache[require.resolve("../services/tmdb")];
+
+        // Set invalid key
         process.env.TMDB_API_KEY = "BAD_KEY";
 
+        // Re-import the module with new env var
+        const TMDBServiceWithBadKey = require("../services/tmdb");
+
         try {
-            await TMDBService.getPopularMovies();
-            fail("Should have thrown an error");
+            await TMDBServiceWithBadKey.getPopularMovies();
+            throw new Error("Expected TMDBService to throw an error with invalid API key");
+       
         } catch (err) {
-            expect(err.statusCode).toBe(400); // Or whatever your BadRequestResponse code is
+             // The error should be a BadRequestResponse with the specific message
+            expect(err).toBeDefined();
+            expect(err.message).toBe("Failed to fetch from external provider");
+
+            // Verify BadRequestResponse (status code 400)
+            expect(err.statusCode).toBe(400);
+            
         } finally {
-            // Restore key so we don't break other tests
+            // Restore key
             process.env.TMDB_API_KEY = originalKey;
+            
+            // Clear cache again and re-import for other tests
+            delete require.cache[require.resolve("../services/tmdb")]
         }
     });
 });
