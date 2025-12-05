@@ -1,11 +1,38 @@
-//POST	/api/reviews	- Post a review. Body: { showId, rating, content }.
+const express = require("express");
+const router = express.Router();
+const asyncHandler = require("../utils/asyncHandler");
+const { ensureLoggedIn } = require("../middleware/auth");
+const { 
+    createReview, 
+    getReview, 
+    updateReview, 
+    deleteReview 
+} = require("../controllers/reviewController");
+const { toggleReviewLike } = require("../controllers/likeController");
+const { createComment, getReviewComments } = require("../controllers/commentController");
 
-//GET	/api/reviews/:id	- Get a specific review (for a dedicated page).
+// --- PUBLIC ROUTES ---
 
-//PUT	/api/reviews/:id	- Edit my review.
+// Get specific review
+router.get("/:id", asyncHandler(getReview));
 
-//DELETE	/api/reviews/:id	- Delete my review.
+// Get comments for a review (Nested Resource)
+// Route: GET /api/v1/reviews/:reviewId/comments
+router.get("/:reviewId/comments", asyncHandler(getReviewComments));
 
-//POST	/api/reviews/:id/like	- Like a review.
 
-//POST	/api/reviews/:id/comments	- Add a comment to a review thread.
+// --- PROTECTED ROUTES ---
+router.use(ensureLoggedIn);
+
+router.post("/", asyncHandler(createReview));
+router.put("/:id", asyncHandler(updateReview));
+router.delete("/:id", asyncHandler(deleteReview));
+
+// Toggle Like
+router.post("/:reviewId/like", asyncHandler(toggleReviewLike));
+
+// Post Comment (Nested Resource)
+// Route: POST /api/v1/reviews/:reviewId/comments
+router.post("/:reviewId/comments", asyncHandler(createComment));
+
+module.exports = router;

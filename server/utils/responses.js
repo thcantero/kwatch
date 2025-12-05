@@ -1,9 +1,11 @@
-class BaseResponse {
+class BaseResponse extends Error {
     constructor(statusCode, message, data = null) {
+        super(message);
         this.statusCode = statusCode;
-        this.message = message;
+        //this.message = message; inherited from Error
         this.data = data;
         this.timestamp = new Date().toISOString();
+        this.name = this.constructor.name;
     }
 
     send(res) {

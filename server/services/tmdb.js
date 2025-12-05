@@ -30,14 +30,22 @@ class TMDBService {
 
     // --- Shows (Movies & TV) ---
     static async getPopularMovies() {
-        return this.fetch("/movie/popular");
+        return this.fetch("/discover/movie", { 
+            with_original_language: 'ko', 
+            sort_by: 'popularity.desc',
+            "vote_count.gte": 100 // Filter out low-quality noise
+        });
     }
 
     static async getPopularTV() {
-        return this.fetch("/tv/popular");
+        return this.fetch("/discover/tv", { 
+            with_original_language: 'ko', 
+            sort_by: 'popularity.desc',
+            "vote_count.gte": 50 
+        });
     }
 
-    // --- Genres (THIS WAS MISSING) ---
+    // --- Genres 
     static async getMovieGenres() {
         return this.fetch("/genre/movie/list");
     }
@@ -50,6 +58,11 @@ class TMDBService {
     static async getPopularPeople() {
         return this.fetch("/person/popular");
     }
+
+    // --- Get Cast
+    static async getCredits(mediaType, id) {
+        return this.fetch(`/${mediaType}/${id}/credits`);
+    } 
 
     // --- Search ---
     static async searchMulti(query) {

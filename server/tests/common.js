@@ -1,9 +1,12 @@
+"use strict";
+
 const { db } = require("../config/db");
 const User = require("../models/User");
 const { createToken } = require("../utils/tokens"); 
+const bcrypt = require("bcrypt");
 
 async function commonBeforeAll() {
-  // Clear tables - Order matters because of Foreign Keys!
+  // ✅ FIX: Added comments, review_likes, likes, follows
   await db.query(`
     TRUNCATE 
       users, 
@@ -13,74 +16,38 @@ async function commonBeforeAll() {
       watchlist, 
       reviews, 
       shows_genres, 
-      shows_actors 
+      shows_actors,
+      comments,
+      review_likes,
+      likes,
+      follows
     RESTART IDENTITY CASCADE
   `);
 
-  // Create a default test user
-  await User.register({
-    username: "u1",
-    firstName: "U1F",
-    lastName: "U1L",
-    email: "u1@email.com",
-    password: "password1",
-    isAdmin: false
-  });
-
-  // Create an admin test user
-  await User.register({
-    username: "admin",
-    firstName: "AdminF",
-    lastName: "AdminL",
-    email: "admin@email.com",
-    password: "password1",
-    isAdmin: true
-  });
+  // Use raw SQL to create users fast and safely
+  const hashedPassword = await bcrypt.hash("password1", 1);
+  
+  await db.query(`
+    INSERT INTO users (username, password_hash, name, email, is_admin)
+    VALUES 
+    ('u1', $1, 'U1F U1L', 'u1@email.com', false),
+    ('admin', $1, 'AdminF AdminL', 'admin@email.com', true)
+  `, [hashedPassword]);
 }
 
 async function commonBeforeEach() {
-  await db.query("BEGIN"); // Start transaction
+  await db.query("BEGIN");
 }
 
 async function commonAfterEach() {
-  await db.query("ROLLBACK"); // Rollback changes so tests don't affect each other
+  await db.query("ROLLBACK");
 }
 
 async function commonAfterAll() {
-  try {
-    // In test environment, we need to manually close connections
-    if (process.env.NODE_ENV === 'test') {
-      // First, check if there are any active connections
-      const result = await db.query(`
-        SELECT pid, query, state 
-        FROM pg_stat_activity 
-        WHERE datname = current_database()
-        AND state = 'idle'
-      `);
-      
-      // Kill any idle connections (optional but helpful)
-      for (const row of result.rows) {
-        try {
-          await db.query(`SELECT pg_terminate_backend($1)`, [row.pid]);
-        } catch (e) {
-          // Ignore errors
-        }
-      }
-      
-      // Close the pool
-      await db.end();
-    }
-  } catch (err) {
-    console.warn("Warning during test cleanup:", err.message);
-    // In test environment, force exit if cleanup fails
-    if (process.env.NODE_ENV === 'test') {
-      setTimeout(() => process.exit(0), 1000);
-    }
-  }
+  await db.end();
 }
 
 async function createTestToken(username="u1") {
-    // We need to fetch the user by username to get their ID
     const res = await db.query(`SELECT * FROM users WHERE username = $1`, [username]);
     const user = res.rows[0];
     return createToken(user);

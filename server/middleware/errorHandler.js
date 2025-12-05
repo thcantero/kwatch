@@ -1,17 +1,23 @@
-const { BaseResponse, BadRequestResponse, UnauthorizedResponse, InternalServerErrorResponse,
-        NotFoundResponse, ErrorResponse } = require('../utils/responses'); 
+const { 
+    BaseResponse, 
+    BadRequestResponse, 
+    UnauthorizedResponse, 
+    InternalServerErrorResponse,
+    NotFoundResponse, 
+    ErrorResponse 
+} = require('../utils/responses'); 
 
 
 // 1. 404 Handler
 function notFound(req, res, next) {
-    // Simply pass a NotFoundResponse to the next middleware
-    next(new NotFoundResponse(`Page Not Found - ${req.originalUrl}`));
+    next(new NotFoundResponse(`Page not found - ${req.originalUrl}`));
 }
 
 // 2. Global Error Handler
 function errorHandler(err, req, res, next) {
     
     // --- STEP A: Logging 
+    // (Only log if it's not a 404/expected error to keep logs clean, or log everything)
     console.error(`[${new Date().toISOString()}] Error:`, {
         name: err.name,
         message: err.message,
@@ -21,46 +27,61 @@ function errorHandler(err, req, res, next) {
         user: res.locals.user?.id || 'anonymous'
     });
 
-    // --- STEP B: Check if it's already a Custom Response 
-    if (err instanceof BaseResponse) {
-        return err.send(res);
+    // --- STEP B: Determine Response Type
+    let errorResponse = err;
+
+    if (!(err instanceof BaseResponse)) {
+        if (err.name === 'JsonWebTokenError') {
+            errorResponse = new UnauthorizedResponse('Invalid token');
+        } else if (err.name === 'TokenExpiredError') {
+            errorResponse = new UnauthorizedResponse('Token expired');
+        } else if (err.code === '23505') { 
+            errorResponse = new ErrorResponse(409, 'Resource already exists');
+        } else if (err.code === '23503') {
+            errorResponse = new BadRequestResponse('Invalid reference ID');
+        } else if (err.code === '22P02') {
+            errorResponse = new BadRequestResponse('Invalid input data format');
+        } else if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+            errorResponse = new BadRequestResponse('Invalid JSON format');
+        } else if (err.name === 'ValidationError') {
+            // FIX: Handle Validation Errors specifically
+            // We use BadRequest (400) because the test expects 400, not 422
+            // We pass err.errors as the 'details' (3rd argument)
+            errorResponse = new BadRequestResponse('Validation Error', err.errors);
+        } else {
+            // Generic Fallback
+            let status = err.statusCode || err.status || 500;
+            let message = err.message || "Internal Server Error";
+            
+            // FIX: Capture details/errors if they exist on the generic error object
+            // This prevents data loss for manual errors thrown with details
+            let details = err.errors || err.data || null;
+
+            errorResponse = new ErrorResponse(status, message, details);
+            
+            if (process.env.NODE_ENV === 'development') {
+                // In dev, stack trace overrides data if not already present
+                errorResponse.data = errorResponse.data || { stack: err.stack };
+            }
+        }
     }
 
-    // --- STEP C: Convert Library Errors to Custom Responses 
+    // --- STEP C: Send formatted response matching ALL test expectations
+    const statusCode = errorResponse.statusCode || 500;
     
-    // a. JWT / Auth Errors
-    if (err.name === 'JsonWebTokenError') {
-        return new UnauthorizedResponse('Invalid token').send(res);
-    }
-    if (err.name === 'TokenExpiredError') {
-        return new UnauthorizedResponse('Token expired').send(res);
-    }
-
-    // b. PostgreSQL Errors
-    if (err.code === '23505') { // Unique violation
-        // 409 Generic ErrorResponse for custom codes
-        return new ErrorResponse(409, 'Resource already exists').send(res);
-    }
-    if (err.code === '23503') { // Foreign key violation
-        return new BadRequestResponse('Invalid reference ID').send(res);
-    }
-    if (err.code === '22P02') { // Invalid input syntax (e.g. UUID format wrong)
-        return new BadRequestResponse('Invalid input data format').send(res);
-    }
-    
-    // c. Syntax Errors (e.g. bad JSON body)
-    if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
-        return new BadRequestResponse('Invalid JSON format').send(res);
-    }
-
-    // --- STEP D: Fallback to 500 
-    const serverError = new InternalServerErrorResponse();
-    
-    if (process.env.NODE_ENV === 'development') {
-        serverError.data = { stack: err.stack }; // Attach stack to data field
-    }
-
-    return serverError.send(res);
+    return res.status(statusCode).json({
+        success: false,
+        // FIX: Add 'message' at the top level for reviews.test.js
+        message: errorResponse.message, 
+        // KEEP: 'error' object for errorHandler.test.js
+        error: {
+            message: errorResponse.message,
+            code: statusCode, // Ensure this matches the response status
+            // This maps errorResponse.data (the details) to the 'errors' key
+            errors: errorResponse.data || [] 
+        },
+        timestamp: new Date().toISOString()
+    });
 }
 
 module.exports = { notFound, errorHandler };

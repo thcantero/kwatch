@@ -77,19 +77,56 @@ class User {
   }
   
   /** Update user profile (Partial update) */
-  static async update(id, data) {
-      // NOTE: We will implement the dynamic SQL update helper later
-      // For now, let's just allow updating the name
-      if (data.name) {
-          const result = await db.query(
-              `UPDATE users SET name = $1, updated_at = NOW() 
-               WHERE id = $2 RETURNING id, username, name`,
-               [data.name, id]
-          );
-          return result.rows[0];
-      }
-      return this.get(id);
+  static async update(userId, data) {
+    const { email, bio } = data;
+    
+    const result = await db.query(
+        `UPDATE users 
+         SET email = COALESCE($1, email), 
+             bio = COALESCE($2, bio)
+         WHERE id = $3 
+         RETURNING id, username, email, bio, created_at`,
+        [email, bio, userId]
+    );
+    
+    const user = result.rows[0];
+    if (!user) {
+        throw new NotFoundResponse('User not found');
+    }
+    
+    return user;
+}
+
+  static async search(username) {
+    const result = await db.query(
+        `SELECT id, username, name FROM users WHERE username ILIKE $1`,
+        [`%${username}%`]
+    );
+    return result.rows;
+}
+
+static async getUserStats(userId) {
+    // Simple stats query
+    const result = await db.query(
+        `SELECT 
+            (SELECT COUNT(*) FROM reviews WHERE user_id = $1) AS review_count,
+            (SELECT COUNT(*) FROM watchlist WHERE user_id = $1) AS watchlist_count`,
+        [userId]
+    );
+    return result.rows[0];
+}
+
+/** Find user by username */
+  static async getByUsername(username) {
+    const result = await db.query(
+      `SELECT id, username, name, email, is_admin AS "isAdmin"
+       FROM users
+       WHERE username = $1`,
+      [username]
+    );
+    return result.rows[0];
   }
+
 }
 
 module.exports = User;

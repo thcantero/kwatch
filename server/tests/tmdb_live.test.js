@@ -39,33 +39,18 @@ describeIfKey("TMDB Service (Live Connection)", function () {
         // Temporarily break the key to test error handling
         const originalKey = process.env.TMDB_API_KEY;
 
-        // Clear the require cache for tmdb module
-        delete require.cache[require.resolve("../services/tmdb")];
-
-        // Set invalid key
-        process.env.TMDB_API_KEY = "BAD_KEY";
-
-        // Re-import the module with new env var
-        const TMDBServiceWithBadKey = require("../services/tmdb");
-
         try {
-            await TMDBServiceWithBadKey.getPopularMovies();
-            throw new Error("Expected TMDBService to throw an error with invalid API key");
-       
-        } catch (err) {
-             // The error should be a BadRequestResponse with the specific message
-            expect(err).toBeDefined();
-            expect(err.message).toBe("Failed to fetch from external provider");
+            // 1. Just overwrite the key. The service reads it dynamically now.
+            process.env.TMDB_API_KEY = "BAD_KEY";
 
-            // Verify BadRequestResponse (status code 400)
+            await TMDBService.getPopularMovies();
+            throw new Error("API call succeeded but should have failed");
+        } catch (err) {
+            // 2. Check for the error YOUR service throws
+            expect(err.message).toBe("Failed to fetch from external provider");
             expect(err.statusCode).toBe(400);
-            
         } finally {
-            // Restore key
             process.env.TMDB_API_KEY = originalKey;
-            
-            // Clear cache again and re-import for other tests
-            delete require.cache[require.resolve("../services/tmdb")]
         }
     });
 });

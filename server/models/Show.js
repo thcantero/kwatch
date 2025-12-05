@@ -1,10 +1,9 @@
 const { db } = require("../config/db");
 const TMDBService = require("../services/tmdb");
-
+const { NotFoundResponse } = require("../utils/responses"); 
 class Show {
     
-    /** * 
-     * 1. Checks DB for popular shows.
+    /** * * 1. Checks DB for popular shows.
      * 2. If empty or old, fetches from TMDB Service.
      * 3. Saves to DB.
      * 4. Returns data.
@@ -43,7 +42,7 @@ class Show {
                 tmdb_id: item.id,
                 media_type: item.media_type,
                 title: item.title,
-                synopsis: item.overview,
+                synopsis: item.overview, // Maps TMDB 'overview' to DB 'synopsis'
                 release_year: item.release_date ? parseInt(item.release_date.split("-")[0]) : null,
                 poster_url: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null,
                 popularity: item.popularity,
@@ -72,7 +71,7 @@ class Show {
                 data.tmdb_id, 
                 data.media_type, 
                 data.title, 
-                data.synopsis, 
+                data.synopsis, // Value passed to synopsis column
                 data.release_year, 
                 data.poster_url, 
                 data.popularity,
@@ -90,7 +89,7 @@ class Show {
         if (!query) return [];
 
         console.log(`🔎 Searching for: ${query}`);
-        const results = await TMDBService.searchMulti(query); // We need to add this to Service
+        const results = await TMDBService.searchMulti(query); 
 
         const savedShows = [];
         for (const item of results.results) {
@@ -102,7 +101,7 @@ class Show {
                 tmdb_id: item.id,
                 media_type: item.media_type,
                 title: item.title || item.name,
-                synopsis: item.overview,
+                synopsis: item.overview, // Maps to synopsis
                 release_year: (item.release_date || item.first_air_date)?.split("-")[0] || null,
                 poster_url: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null,
                 popularity: item.popularity,
@@ -118,27 +117,35 @@ class Show {
      * We need to join with Genres and Providers.
      */
     static async getById(id) {
-        // 1. Try to fetch from DB with Genres
         const showRes = await db.query(
-            `SELECT s.*, 
-                    COALESCE(JSON_AGG(DISTINCT g.genre) FILTER (WHERE g.id IS NOT NULL), '[]') AS genres
-             FROM shows s
-             LEFT JOIN shows_genres sg ON s.id = sg.show_id
-             LEFT JOIN genres g ON sg.genre_id = g.id
-             WHERE s.id = $1
-             GROUP BY s.id`,
+            `SELECT * FROM shows WHERE id = $1`,
             [id]
         );
 
         const show = showRes.rows[0];
-        if (!show) throw new NotFoundResponse(`Show not found`);
+        if (!show) {
+            throw new NotFoundResponse('Show not found');
+        }
 
-        // 2. Fetch "Where to Watch" (Streaming Providers)
-        // We don't store this in DB permanently as it changes often
-        // so we fetch fresh from TMDB or Cache it briefly.
-        // For now, let's fetch fresh from TMDBService if you want?
-        
         return show;
+    }
+
+    // Ensure this matches the test expectation
+    static async getDetails(id) {
+        return this.getById(id);
+    }
+    
+    /** Get shows by genre name */
+    static async getByGenre(genreName) {
+        const result = await db.query(
+        `SELECT s.id, s.title, s.poster_url 
+        FROM shows s
+        JOIN shows_genres sg ON s.id = sg.show_id
+        JOIN genres g ON sg.genre_id = g.id
+        WHERE g.genre ILIKE $1`,
+        [genreName]
+        );
+        return result.rows;
     }
 
 }

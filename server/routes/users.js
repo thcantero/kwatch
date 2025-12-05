@@ -14,13 +14,22 @@ const express = require('express');
 const router = express.Router();
 const asyncHandler = require('../utils/asyncHandler');
 const { ensureLoggedIn, ensureCorrectUserOrAdmin } = require('../middleware/auth');
-const { getUserProfile, updateProfile } = require('../controllers/userController');
+const { getUserProfile, updateProfile, getWatchlist, getFollowing, getUserLikes } = require('../controllers/userController');
+const { followUser, unfollowUser } = require('../controllers/followController'); 
 
-// GET Public Profile
+// GET Public Profile & Lists (No login required to view profile)
+router.get('/:id/following', asyncHandler(getFollowing));
+router.get('/:id/likes', asyncHandler(getUserLikes));
+router.get('/:id/watchlist', asyncHandler(getWatchlist))
+
 router.get('/:id', asyncHandler(getUserProfile));
 
-// PUT Update Profile (Protected: Must be logged in)
-// Note: We use /profile/me pattern or just verify the token matches
-router.put('/profile', ensureLoggedIn, asyncHandler(updateProfile));
+
+// --- PROTECTED ROUTES ---
+router.put('/profile', ensureLoggedIn, asyncHandler(updateProfile)); // Update logged-in user's profile
+
+// User-to-User Follows
+router.post('/:id/follow', ensureLoggedIn, asyncHandler(followUser));
+router.delete('/:id/follow', ensureLoggedIn, asyncHandler(unfollowUser));
 
 module.exports = router;

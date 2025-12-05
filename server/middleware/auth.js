@@ -1,6 +1,5 @@
 const jwt = require("jsonwebtoken");
-const { UnauthorizedResponse } = require("../utils/responses");
-const { SECRET_KEY } = process.env;
+const { UnauthorizedResponse } = require("../utils/responses")
 
 /** Middleware: Authenticate user.
  *
@@ -11,6 +10,8 @@ const { SECRET_KEY } = process.env;
  */
 function authenticateJWT(req, res, next) {
   try {
+    const SECRET_KEY = process.env.SECRET_KEY || "secret_dev_key";
+
     const authHeader = req.headers && req.headers.authorization;
     if (authHeader) {
       const token = authHeader.replace(/^[Bb]earer /, "").trim();

@@ -1,4 +1,7 @@
 const User = require("../models/User");
+const Watchlist = require("../models/Watchlist"); 
+const Follow = require("../models/Follow");      
+const Like = require("../models/Like");
 const { SuccessResponse } = require("../utils/responses");
 
 // GET /api/users/:id
@@ -9,9 +12,43 @@ const getUserProfile = async (req, res) => {
 
 // PUT /api/users/profile (Protected)
 const updateProfile = async (req, res) => {
-    // res.locals.user.id comes from the middleware
     const updatedUser = await User.update(res.locals.user.id, req.body);
     return new SuccessResponse("Profile updated", updatedUser).send(res);
 };
 
-module.exports = { getUserProfile, updateProfile };
+// GET /api/users/:id/watchlist
+const getWatchlist = async (req, res) => {
+    const userId = req.params.id;
+    const list = await Watchlist.list(userId);
+    return new SuccessResponse("User watchlist retrieved", list).send(res);
+};
+
+// GET /api/users/:id/following
+const getFollowing = async (req, res) => {
+    const userId = req.params.id;
+    const following = await Follow.getFollowing(userId);
+    return new SuccessResponse("User following list retrieved", following).send(res);
+};
+
+// GET /api/users/:id/likes
+const getUserLikes = async (req, res) => {
+    const userId = req.params.id;
+    const likes = await Like.getUserLikes(userId);
+    return new SuccessResponse("User likes retrieved", likes).send(res);
+};
+
+// GET /api/users/:id/followers (optional - for completeness)
+const getFollowers = async (req, res) => {
+    const userId = req.params.id;
+    const followers = await Follow.getFollowers(userId);
+    return new SuccessResponse("User followers retrieved", followers).send(res);
+};
+
+module.exports = { 
+    getUserProfile, 
+    updateProfile,
+    getWatchlist,     
+    getFollowing,     
+    getUserLikes,
+    getFollowers     
+};

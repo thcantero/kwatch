@@ -1,5 +1,14 @@
-//GET	/api/reviews/:id/comments	- Get all comments for a specific review.
+const express = require("express");
+const router = express.Router();
+const asyncHandler = require("../utils/asyncHandler");
+const { ensureLoggedIn } = require("../middleware/auth");
+const { deleteComment } = require("../controllers/commentController");
 
-//POST	/api/reviews/:id/comments	- Post a new comment. Body: { content: "I agree!" }
+// Secure all routes in this file
+router.use(ensureLoggedIn);
 
-//DELETE	/api/comments/:id	- Delete your own comment.
+// DELETE /api/v1/comments/:id
+// (We only need the ID of the comment to delete it)
+router.delete("/:id", asyncHandler(deleteComment));
+
+module.exports = router;
