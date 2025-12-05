@@ -15,17 +15,52 @@ const app = express();
         const {notFound, errorHandler} = require('./middleware/errorHandler')
         
         app.use(express.json());
-       
-        //Routes
-        const showRoutes = require('./routes/shows');
-        const genreRoutes = require('./routes/genres');
-        const actorRoutes = require('./routes/actors');
-        const authRoutes = require("./routes/auth");
-        const userRoutes = require("./routes/users");
-        const watchlistRoutes = require("./routes/watchlist");
-        const reviewRoutes = require("./routes/reviews");
-        const commentRoutes = require("./routes/comments");
-        const feedRoutes = require("./routes/feed");
+
+        // ----- ROUTES
+
+            // Root route - must come before other middleware
+            app.get('/', (req, res) => {
+                res.json({
+                    message: 'KWatch API',
+                    status: 'running',
+                    version: '1.0.0',
+                    documentation: '/api/v1/shows, /api/v1/users, etc.',
+                    health: '/health',
+                    timestamp: new Date().toISOString()
+                });
+            });
+
+            // Health check route
+            app.get('/health', async (req, res) => {
+                try {
+                    // Test database connection
+                    const result = await db.query('SELECT NOW()');
+                    res.json({
+                        status: 'healthy',
+                        server: 'running',
+                        database: 'connected',
+                        timestamp: result.rows[0].now
+                    });
+                } catch (error) {
+                    res.status(503).json({
+                        status: 'unhealthy',
+                        server: 'running',
+                        database: 'disconnected',
+                        error: error.message
+                    });
+                }
+            });
+        
+            //Other routes
+            const showRoutes = require('./routes/shows');
+            const genreRoutes = require('./routes/genres');
+            const actorRoutes = require('./routes/actors');
+            const authRoutes = require("./routes/auth");
+            const userRoutes = require("./routes/users");
+            const watchlistRoutes = require("./routes/watchlist");
+            const reviewRoutes = require("./routes/reviews");
+            const commentRoutes = require("./routes/comments");
+            const feedRoutes = require("./routes/feed");
 
         //Models
 
