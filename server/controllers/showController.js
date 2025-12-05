@@ -28,11 +28,18 @@ const getShowDetails = async (req, res) => {
     const show = await Show.getById(id);
     if (!show) throw new NotFoundResponse('Show not found');
 
-    // 2. Get Cast (Using the new method above)
-    const cast = await Show.getCast(show);
+    // 2. Parallel Fetch: Cast + Trailer (Optimization!)
+    const [cast, trailerKey] = await Promise.all([
+        Show.getCast(show),
+        Show.getTrailer(show)
+    ]);
 
     // 3. Attach cast to the response
-    const data = { ...show, cast };
+    const data = { 
+        ...show, 
+        cast, 
+        trailer_url: trailerKey ? `https://www.youtube.com/embed/${trailerKey}` : null 
+    };
 
     return new SuccessResponse('Show details retrieved', data).send(res);
 };

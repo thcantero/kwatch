@@ -179,6 +179,23 @@ const ShowDetails = () => {
 
           {show.cast && show.cast.length > 0 && (
             <div className="mt-5">
+
+                {/* --- TRAILER SECTION --- */}
+                {show.trailer_url && (
+                    <div className="mb-5">
+                    <h4>Trailer</h4>
+                    <div className="ratio ratio-16x9 rounded overflow-hidden shadow">
+                        <iframe 
+                        src={show.trailer_url} 
+                        title="YouTube video player" 
+                        allowFullScreen
+                        ></iframe>
+                    </div>
+                    </div>
+                )}
+                {/* --------------------------- */}
+
+
               <h4>Top Cast</h4>
               <div className="d-flex overflow-auto pb-3 gap-3" style={{ scrollbarWidth: 'thin' }}>
                 {show.cast.map(actor => (

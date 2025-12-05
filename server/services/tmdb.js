@@ -78,6 +78,11 @@ class TMDBService {
     static async searchMulti(query) {
         return this.fetch("/search/multi", { query });
     }
+
+    // --- Videos
+    static async getVideos(mediaType, id) {
+        return this.fetch(`/${mediaType}/${id}/videos`);
+    }
 }
 
 module.exports = TMDBService;

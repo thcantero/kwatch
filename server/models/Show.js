@@ -178,6 +178,25 @@ class Show {
             }));
     }
 
+    /** Get the YouTube Trailer key */
+    static async getTrailer(show) {
+        if (!show.tmdb_id || !show.media_type) return null;
+
+        const data = await TMDBService.getVideos(show.media_type, show.tmdb_id);
+        
+        if (!data.results || data.results.length === 0) return null;
+
+        // Logic: Find the first video that is official, on YouTube, and type is 'Trailer'
+        const trailer = data.results.find(v => 
+            v.site === 'YouTube' && v.type === 'Trailer'
+        );
+
+        // Fallback: If no "Trailer" found, take the first "Teaser"
+        const fallback = data.results.find(v => v.site === 'YouTube');
+
+        return trailer ? trailer.key : (fallback ? fallback.key : null);
+    }
+
 }
 
 module.exports = Show;
