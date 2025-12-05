@@ -29,10 +29,16 @@ function getDatabaseURI() {
         throw new Error("❌ FATAL: No database configuration found for Production mode.");
     }
 
+    // DEBUGGING LOGS
+    const dbUri = getDatabaseURI();
+    const redactedUri = dbUri.includes("@") 
+    ? dbUri.replace(/:([^:@]+)@/, ":****@") // Hides password
+    : dbUri;
+
 // Log the configuration 
 console.log("--- Config ---".green);
 console.log("PORT:".yellow, PORT.toString());
-console.log("Database:".yellow, getDatabaseURI());
+console.log("Database URL (Redacted):".yellow, redactedUri());
 console.log("--- End Config ---".green);
 
 module.exports= {

@@ -1,14 +1,18 @@
-/** Database setup for KWatch */
-
+/** Database setup */
 const { Pool } = require("pg");
-const { getDatabaseURI } = require('../config')
+
+// If db.js and config.js are in the same folder, use './config'. 
+// If db.js is in a subfolder (like /db/), keep '../config'.
+const { getDatabaseURI } = require('./config'); 
 
 let db;
 
-if( process.env.NODE_ENV === "production") {
+console.log("Attempting DB connection..."); // Debug log
+
+if (process.env.NODE_ENV === "production") {
     db = new Pool({
         connectionString: getDatabaseURI(),
-        ssl:{
+        ssl: {
             rejectUnauthorized: false
         }
     });
@@ -18,11 +22,17 @@ if( process.env.NODE_ENV === "production") {
     });
 }
 
-// Only call db.connect() in non-test environments
-if (process.env.NODE_ENV !== 'test') {
-    db.connect()
-        .then(() => console.log("✅ Database connected"))
-        .catch(err => console.error("❌ Database connection error:", err));
-}
+// DEBUG: Force a real query to ensure connection is alive
+db.query('SELECT NOW()')
+    .then(res => {
+        console.log("✅ DATABASE CONNECTED SUCCESSFULLY");
+        console.log("Timestamp from DB:", res.rows[0]);
+    })
+    .catch(err => {
+        console.error("❌ FATAL DATABASE CONNECTION ERROR");
+        console.error("Error Code:", err.code);
+        console.error("Error Message:", err.message);
+        console.error("Full Error:", err);
+    });
 
-module.exports = {db};
+module.exports = { db };
