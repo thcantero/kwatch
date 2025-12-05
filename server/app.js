@@ -2,6 +2,7 @@
 require('dotenv').config();
 
 const express = require('express');
+const cors = require('cors');
 //const ExpressError = require('./utils/ExpressError')
 
 //Initialize app variable
@@ -29,6 +30,9 @@ const app = express();
         //Models
 
     // ----- MIDDLEWARE
+
+        //Allows all connections 
+        app.use(cors());
 
         // This checks for a token on every single request
         app.use(authenticateJWT);

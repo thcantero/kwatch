@@ -61,6 +61,23 @@ class Actor {
         return savedActors.slice(0, limit);
     }
 
+    static async getById(personId) {
+        const actor = await TMDBService.getPersonDetails(personId);
+        return actor;
+    }
+
+    static async getCredits(personId) {
+        const credits = await TMDBService.getPersonCredits(personId);
+        
+        // Filter: Only show content with a poster (looks better)
+        // Sort: Most popular shows first
+        const cast = credits.cast
+            .filter(c => c.poster_path && c.media_type !== 'person')
+            .sort((a, b) => b.popularity - a.popularity);
+            
+        return cast;
+    }
+
     static async create({ tmdbId, name, photoUrl, popularity }) {
         // Fixed: Ensure name and photo_url update on conflict
         const res = await db.query(

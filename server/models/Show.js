@@ -91,25 +91,34 @@ class Show {
         console.log(`🔎 Searching for: ${query}`);
         const results = await TMDBService.searchMulti(query); 
 
-        const savedShows = [];
-        for (const item of results.results) {
-            // Filter out people, only want movies/tv
-            if (item.media_type === 'person') continue;
+        // 1. Filter: Must not be a person AND must be Korean language ('ko')
+        const validItems = results.results.filter(item => {
+            const isPerson = item.media_type === 'person';
+            const isKorean = item.original_language === 'ko';
+            return !isPerson && isKorean;
+        });
 
-            // Save to DB so we have a local copy
-            const show = await Show.create({
-                tmdb_id: item.id,
-                media_type: item.media_type,
-                title: item.title || item.name,
-                synopsis: item.overview, // Maps to synopsis
-                release_year: (item.release_date || item.first_air_date)?.split("-")[0] || null,
-                poster_url: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null,
-                popularity: item.popularity,
-                vote_average: item.vote_average
-            });
-            savedShows.push(show);
-        }
-        return savedShows;
+        // 2. Process valid items in parallel
+        const savedShows = await Promise.all(validItems.map(async (item) => {
+            try {
+                return await Show.create({
+                    tmdb_id: item.id,
+                    media_type: item.media_type,
+                    title: item.title || item.name,
+                    synopsis: item.overview,
+                    release_year: (item.release_date || item.first_air_date)?.split("-")[0] || null,
+                    poster_url: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null,
+                    popularity: item.popularity,
+                    vote_average: item.vote_average
+                });
+            } catch (err) {
+                console.error(`Failed to save show ${item.id}:`, err.message);
+                return null;
+            }
+        }));
+
+        // 3. Return only successful saves
+        return savedShows.filter(s => s !== null);
     }
 
     /**
@@ -146,6 +155,27 @@ class Show {
         [genreName]
         );
         return result.rows;
+    }
+
+    /** Get cast members for this show */
+    static async getCast(show) {
+        if (!show.tmdb_id || !show.media_type) return [];
+
+        // Use the method you ALREADY have in tmdb.js
+        const credits = await TMDBService.getCredits(show.media_type, show.tmdb_id);
+        
+        if (!credits || !credits.cast) return [];
+
+        // Return top 10 actors with photos
+        return credits.cast
+            .filter(c => c.profile_path) // Only those with photos
+            .slice(0, 10)
+            .map(c => ({
+                id: c.id, // TMDB Person ID
+                name: c.name,
+                character: c.character,
+                profile_url: `https://image.tmdb.org/t/p/w200${c.profile_path}`
+            }));
     }
 
 }

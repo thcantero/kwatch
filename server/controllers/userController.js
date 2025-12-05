@@ -2,7 +2,7 @@ const User = require("../models/User");
 const Watchlist = require("../models/Watchlist"); 
 const Follow = require("../models/Follow");      
 const Like = require("../models/Like");
-const { SuccessResponse } = require("../utils/responses");
+const { NotFoundResponse, SuccessResponse } = require("../utils/responses");
 
 // GET /api/users/:id
 const getUserProfile = async (req, res) => {
@@ -44,11 +44,26 @@ const getFollowers = async (req, res) => {
     return new SuccessResponse("User followers retrieved", followers).send(res);
 };
 
+/** GET /api/users/:id/stats */
+const getUserStats = async (req, res, next) => {
+    try {
+        const stats = await User.getUserStats(req.params.id);
+        if (!stats) {
+            // Should usually return 0s, but just in case
+            return next(new NotFoundResponse("Stats not found"));
+        }
+        res.json({ success: true, data: stats });
+    } catch (err) {
+        next(err);
+    }
+};
+
 module.exports = { 
     getUserProfile, 
     updateProfile,
     getWatchlist,     
     getFollowing,     
     getUserLikes,
-    getFollowers     
+    getFollowers,
+    getUserStats,     
 };

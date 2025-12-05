@@ -14,10 +14,12 @@ const express = require('express');
 const router = express.Router();
 const asyncHandler = require('../utils/asyncHandler');
 const { ensureLoggedIn, ensureCorrectUserOrAdmin } = require('../middleware/auth');
-const { getUserProfile, updateProfile, getWatchlist, getFollowing, getUserLikes } = require('../controllers/userController');
+const { getUserProfile, updateProfile, getWatchlist, getFollowing, getUserLikes, getUserStats } = require('../controllers/userController');
 const { followUser, unfollowUser } = require('../controllers/followController'); 
 
 // GET Public Profile & Lists (No login required to view profile)
+router.get('/:id/stats', asyncHandler(getUserStats));
+
 router.get('/:id/following', asyncHandler(getFollowing));
 router.get('/:id/likes', asyncHandler(getUserLikes));
 router.get('/:id/watchlist', asyncHandler(getWatchlist))

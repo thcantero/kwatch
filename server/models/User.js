@@ -110,7 +110,9 @@ static async getUserStats(userId) {
     const result = await db.query(
         `SELECT 
             (SELECT COUNT(*) FROM reviews WHERE user_id = $1) AS review_count,
-            (SELECT COUNT(*) FROM watchlist WHERE user_id = $1) AS watchlist_count`,
+            (SELECT COUNT(*) FROM watchlist WHERE user_id = $1) AS watchlist_count,
+            (SELECT COUNT(*) FROM follows WHERE followed_id = $1) AS follower_count,
+            (SELECT COUNT(*) FROM follows WHERE follower_id = $1) AS following_count`,
         [userId]
     );
     return result.rows[0];

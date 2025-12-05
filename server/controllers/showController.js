@@ -1,5 +1,5 @@
 const Show = require('../models/Show');
-const { SuccessResponse } = require('../utils/responses');
+const { SuccessResponse, NotFoundResponse } = require('../utils/responses');
 
 /**
  * GET /api/v1/shows/popular
@@ -22,8 +22,19 @@ const searchShows = async (req, res) => {
 };
 
 const getShowDetails = async (req, res) => {
-    const show = await Show.getById(req.params.id);
-    return new SuccessResponse("Show details", show).send(res);
+    const { id } = req.params;
+    
+    // 1. Get Show from DB
+    const show = await Show.getById(id);
+    if (!show) throw new NotFoundResponse('Show not found');
+
+    // 2. Get Cast (Using the new method above)
+    const cast = await Show.getCast(show);
+
+    // 3. Attach cast to the response
+    const data = { ...show, cast };
+
+    return new SuccessResponse('Show details retrieved', data).send(res);
 };
 
 module.exports = { getPopularShows, searchShows, getShowDetails };

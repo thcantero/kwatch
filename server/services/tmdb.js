@@ -59,6 +59,16 @@ class TMDBService {
         return this.fetch("/person/popular");
     }
 
+    /** Fetch Actor Bio, Birthday, Place of Birth */
+    static async getPersonDetails(personId) {
+        return this.fetch(`/person/${personId}`);
+    }
+
+    /** Fetch movies/tv shows an actor is in */
+    static async getPersonCredits(personId) {
+        return this.fetch(`/person/${personId}/combined_credits`);
+    }
+
     // --- Get Cast
     static async getCredits(mediaType, id) {
         return this.fetch(`/${mediaType}/${id}/credits`);
