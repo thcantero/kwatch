@@ -22,23 +22,23 @@ function getDatabaseURI() {
 
     // Production / Development
     return process.env.DATABASE_URL || "postgresql:///kwatch";
-    }
+}
 
-    // Sanity Check: In production, crash if no DB is configured
-    if (process.env.NODE_ENV === "production" && !getDatabaseURI()) {
-        throw new Error("❌ FATAL: No database configuration found for Production mode.");
-    }
+// Sanity Check: In production, crash if no DB is configured
+if (process.env.NODE_ENV === "production" && !getDatabaseURI()) {
+    throw new Error("❌ FATAL: No database configuration found for Production mode.");
+}
 
-    // DEBUGGING LOGS
-    const dbUri = getDatabaseURI();
-    const redactedUri = dbUri.includes("@") 
+// DEBUGGING LOGS
+const dbUri = getDatabaseURI();
+const redactedUri = dbUri && dbUri.includes("@") 
     ? dbUri.replace(/:([^:@]+)@/, ":****@") // Hides password
     : dbUri;
 
 // Log the configuration 
 console.log("--- Config ---".green);
 console.log("PORT:".yellow, PORT.toString());
-console.log("Database URL (Redacted):".yellow, redactedUri());
+console.log("Database URL (Redacted):".yellow, redactedUri); 
 console.log("--- End Config ---".green);
 
 module.exports= {
