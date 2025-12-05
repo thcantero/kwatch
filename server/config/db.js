@@ -1,9 +1,7 @@
 /** Database setup */
 const { Pool } = require("pg");
 
-// If db.js and config.js are in the same folder, use './config'. 
-// If db.js is in a subfolder (like /db/), keep '../config'.
-const { getDatabaseURI } = require('./config'); 
+const { getDatabaseURI } = require('../config'); 
 
 let db;
 
