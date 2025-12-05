@@ -62,6 +62,43 @@ class Follow {
         );
         return result.rows;
     }
+
+    /** Follow an actor */
+    static async followActor(userId, actorId) {
+        // Ensure actor exists in our local DB first
+        // (If user clicks follow on a fresh actor page, we need to ensure the ID is valid in our DB)
+        // Since we upsert actors on search/load, they should exist, but safety first.
+        
+        const res = await db.query(
+            `INSERT INTO actor_follows (user_id, actor_id)
+             VALUES ($1, $2)
+             RETURNING user_id, actor_id`,
+            [userId, actorId]
+        );
+        return res.rows[0];
+    }
+
+    /** Unfollow an actor */
+    static async unfollowActor(userId, actorId) {
+        const res = await db.query(
+            `DELETE FROM actor_follows 
+             WHERE user_id = $1 AND actor_id = $2
+             RETURNING user_id, actor_id`,
+            [userId, actorId]
+        );
+        if (!res.rows[0]) throw new NotFoundResponse("Follow not found");
+        return res.rows[0];
+    }
+
+    /** Check if user follows actor */
+    static async isFollowingActor(userId, actorId) {
+        const res = await db.query(
+            `SELECT 1 FROM actor_follows 
+             WHERE user_id = $1 AND actor_id = $2`,
+            [userId, actorId]
+        );
+        return !!res.rows[0];
+    }
 }
 
 module.exports = Follow;

@@ -1,5 +1,6 @@
 const Show = require('../models/Show');
 const { SuccessResponse, NotFoundResponse } = require('../utils/responses');
+const TMDBService = require('../services/tmdb');
 
 /**
  * GET /api/v1/shows/popular
@@ -23,18 +24,60 @@ const searchShows = async (req, res) => {
 
 const getShowDetails = async (req, res) => {
     const { id } = req.params;
-    
-    // 1. Get Show from DB
-    const show = await Show.getById(id);
-    if (!show) throw new NotFoundResponse('Show not found');
+    let show = null;
 
-    // 2. Parallel Fetch: Cast + Trailer (Optimization!)
+    // 1. Try Finding by Local ID (Primary Key)
+    try {
+        // We assume 'id' might be a local ID first
+        show = await Show.getById(id);
+    } catch (e) {
+        // Ignore error, proceed to fallback
+    }
+
+    // 2. Try Finding by TMDB ID (Secondary Lookup)
+    // If the link came from Actor Details, 'id' is likely a TMDB ID
+    if (!show) {
+        show = await Show.findByTmdbId(id);
+    }
+
+    // 3. Last Resort: Fetch from TMDB API & Upsert (Self-Healing)
+    // If we don't have it in DB, we fetch it live and save it.
+    if (!show) {
+        let tmdbData = null;
+        let type = 'movie';
+
+        try {
+            // We don't know if it's a Movie or TV, so we try Movie first
+            tmdbData = await TMDBService.getShowDetails('movie', id);
+        } catch (err) {
+            try {
+                // If Movie fails (404), try TV
+                tmdbData = await TMDBService.getShowDetails('tv', id);
+                type = 'tv';
+            } catch (err2) {
+                throw new NotFoundResponse('Show not found');
+            }
+        }
+
+        // Save the new show to our database
+        show = await Show.create({
+            tmdb_id: tmdbData.id,
+            media_type: type,
+            title: tmdbData.title || tmdbData.name,
+            synopsis: tmdbData.overview,
+            release_year: (tmdbData.release_date || tmdbData.first_air_date)?.split("-")[0],
+            poster_url: tmdbData.poster_path ? `https://image.tmdb.org/t/p/w500${tmdbData.poster_path}` : null,
+            popularity: tmdbData.popularity,
+            vote_average: tmdbData.vote_average
+        });
+    }
+
+    // 4. Fetch Extras (Cast & Trailer)
     const [cast, trailerKey] = await Promise.all([
         Show.getCast(show),
         Show.getTrailer(show)
     ]);
 
-    // 3. Attach cast to the response
     const data = { 
         ...show, 
         cast, 

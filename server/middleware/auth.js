@@ -42,8 +42,18 @@ function ensureCorrectUserOrAdmin(req, res, next) {
   return next();
 }
 
+/** Middleware: Check if user is logged in, but don't throw error if not.
+ * Useful for pages that change slightly based on auth (like Show Details).
+ */
+function ensureOptionalLogin(req, res, next) {
+  // authenticateJWT already ran globally in app.js, so res.locals.user is set if token was valid.
+  // We just pass through.
+  return next();
+}
+
 module.exports = {
   authenticateJWT,
   ensureLoggedIn,
   ensureCorrectUserOrAdmin,
+  ensureOptionalLogin,
 };

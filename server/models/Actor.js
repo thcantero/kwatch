@@ -69,13 +69,36 @@ class Actor {
     static async getCredits(personId) {
         const credits = await TMDBService.getPersonCredits(personId);
         
-        // Filter: Only show content with a poster (looks better)
-        // Sort: Most popular shows first
-        const cast = credits.cast
-            .filter(c => c.poster_path && c.media_type !== 'person')
+        if (!credits || !credits.cast) return [];
+
+        // 1. Filter: Only show content with a poster (looks better)
+        const validCredits = credits.cast.filter(c => 
+            c.poster_path && c.media_type !== 'person'
+        );
+
+        // 2. Deduplicate: Use a Map to keep only one entry per show ID
+        // If an actor is both "Actor" and "Writer" for a movie, we only show the movie once.
+        const uniqueCreditsMap = new Map();
+        for (const item of validCredits) {
+            if (!uniqueCreditsMap.has(item.id)) {
+                uniqueCreditsMap.set(item.id, item);
+            }
+        }
+
+        // 3. Convert back to array and Sort by popularity
+        const cast = Array.from(uniqueCreditsMap.values())
             .sort((a, b) => b.popularity - a.popularity);
             
         return cast;
+    }
+
+    /** Find a local actor by their TMDB ID */
+    static async findByTmdbId(tmdbId) {
+        const res = await db.query(
+            `SELECT id FROM actors WHERE tmdb_id = $1`,
+            [tmdbId]
+        );
+        return res.rows[0];
     }
 
     static async create({ tmdbId, name, photoUrl, popularity }) {

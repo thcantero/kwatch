@@ -79,6 +79,11 @@ class TMDBService {
         return this.fetch("/search/multi", { query });
     }
 
+    /** Fetch details for a specific movie or tv show */
+    static async getShowDetails(type, id) {
+        return this.fetch(`/${type}/${id}`);
+    }
+
     // --- Videos
     static async getVideos(mediaType, id) {
         return this.fetch(`/${mediaType}/${id}/videos`);

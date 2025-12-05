@@ -144,6 +144,14 @@ CREATE TABLE comments (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
+-- ACTOR_FOLLOWS
+CREATE TABLE actor_follows (
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    actor_id INTEGER REFERENCES actors(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, actor_id)
+);
+
 -- STREAMING CACHE (New Addition for "Where to Watch")
 CREATE TABLE streaming_cache (
     show_id INTEGER REFERENCES shows(id) ON DELETE CASCADE,

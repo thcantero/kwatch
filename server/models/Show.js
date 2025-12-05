@@ -197,6 +197,15 @@ class Show {
         return trailer ? trailer.key : (fallback ? fallback.key : null);
     }
 
+    /** Find a show by its TMDB ID */
+    static async findByTmdbId(tmdbId) {
+        const result = await db.query(
+            `SELECT * FROM shows WHERE tmdb_id = $1`, 
+            [tmdbId]
+        );
+        return result.rows[0];
+    }
+
 }
 
 module.exports = Show;
